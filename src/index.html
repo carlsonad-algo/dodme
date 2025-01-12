@@ -132,7 +132,7 @@
                         <input type="text" value="${block.text}" oninput="updateText(${index}, this.value)">
                         <button onclick="insertSpecialCharacter(${index})" style="margin-left: 10px;">Add Special Character</button>
                         <label>Font Size:</label>
-                        <input type="number" value="${block.fontSize}" min="10" max="100" step="2" onchange="updateFontSize(${index}, this.value)">
+                        <input type="number" value="${block.fontSize}" min="10" max="1000" step="2" onchange="updateFontSize(${index}, this.value)">
                         <label>Font Family:</label>
                         <select onchange="updateFontFamily(${index}, this.value)">
                             <option value="Arial" ${block.fontFamily === 'Arial' ? 'selected' : ''}>Arial</option>
@@ -142,7 +142,7 @@
                             <option value="Courier New" ${block.fontFamily === 'Courier New' ? 'selected' : ''}>Courier New</option>
                         </select>
                         <label>Glow Radius:</label>
-                        <input type="number" value="${block.glowRadius}" min="1" max="20" step="1" onchange="updateGlowRadius(${index}, this.value)">
+                        <input type="number" value="${block.glowRadius}" min="1" max="2000" step="1" onchange="updateGlowRadius(${index}, this.value)">
                         <button class="button" style="background-color: red;" onclick="deleteTextBlock(${index})">Delete</button>
                     </div>
                 `;
