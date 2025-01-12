@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOD Me</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            text-align: center;
+            margin: 20px;
+            background-color: #1a1a1a;
+            color: #f0f0f0;
+        }
+        h1 {
+            color: limegreen;
+        }
+        canvas {
+            margin-top: 20px;
+            border: 1px solid #ccc;
+        }
+        .control {
+            margin: 5px;
+            padding: 5px;
+            font-size: 16px;
+            background-color: #333;
+            color: #f0f0f0;
+            border: 1px solid #444;
+            border-radius: 5px;
+        }
+        .button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: limegreen;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        .button:hover {
+            background-color: #e5533d;
+        }
+    </style>
+</head>
+<body>
+    <h1>DOD Me</h1>
+    <input type="file" id="imageUpload" accept="image/*">
+    <div id="textBlocksContainer"></div>
+    <button class="button" onclick="addTextBlock()">Add Text Block</button>
+    <div>
+    <canvas id="memeCanvas"></canvas>
+    </div>
+    <script>
+        const imageUpload = document.getElementById('imageUpload');
+        const memeCanvas = document.getElementById('memeCanvas');
+        const textBlocksContainer = document.getElementById('textBlocksContainer');
+        const ctx = memeCanvas.getContext('2d');
+        let uploadedImage;
+        let textBlocks = [];
+        const devicePixelRatio = window.devicePixelRatio || 1;
+
+        imageUpload.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    setImage(e.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function setImage(imageSrc) {
+            uploadedImage = new Image();
+            uploadedImage.onload = () => {
+                // Adjust canvas for device pixel ratio
+                memeCanvas.width = uploadedImage.width * devicePixelRatio;
+                memeCanvas.height = uploadedImage.height * devicePixelRatio;
+                memeCanvas.style.width = `${uploadedImage.width}px`;
+                memeCanvas.style.height = `${uploadedImage.height}px`;
+                ctx.scale(devicePixelRatio, devicePixelRatio);
+                
+                drawMeme();
+            };
+            uploadedImage.src = imageSrc;
+        }
+
+        function drawMeme() {
+            addImageWithGrayScale();
+
+            textBlocks.forEach((block) => {
+                ctx.font = `${block.fontSize}px ${block.fontFamily}`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.shadowColor = 'lime';
+                ctx.shadowBlur = block.glowRadius;
+                ctx.fillStyle = 'lime';
+                ctx.fillText(block.text, block.x, block.y);
+                ctx.shadowColor = 'transparent';
+                ctx.shadowBlur = 0;
+            });
+        }
+
+        function addImageWithGrayScale() {
+            if (uploadedImage) {
+                ctx.drawImage(uploadedImage, 0, 0);
+
+                // Convert image to grayscale
+                const imageData = ctx.getImageData(0, 0, memeCanvas.width, memeCanvas.height);
+                for (let i = 0; i < imageData.data.length; i += 4) {
+                    const avg = (imageData.data[i] + imageData.data[i + 1] + imageData.data[i + 2]) / 3;
+                    imageData.data[i] = avg;
+                    imageData.data[i + 1] = avg;
+                    imageData.data[i + 2] = avg;
+                }
+                ctx.putImageData(imageData, 0, 0);
+            } else {
+                ctx.clearRect(0, 0, memeCanvas.width, memeCanvas.height);
+            }
+        }
+
+        function renderTextBlockControls() {
+            textBlocksContainer.innerHTML = '';
+            textBlocks.forEach((block, index) => {
+                const blockControl = document.createElement('div');
+                blockControl.innerHTML = `
+                    <div style="margin: 10px; border: 1px solid #ccc; padding: 10px;">
+                        <label>Text:</label>
+                        <input type="text" value="${block.text}" oninput="updateText(${index}, this.value)">
+                        <button onclick="insertSpecialCharacter(${index})" style="margin-left: 10px;">Add Special Character</button>
+                        <label>Font Size:</label>
+                        <input type="number" value="${block.fontSize}" min="10" max="100" step="2" onchange="updateFontSize(${index}, this.value)">
+                        <label>Font Family:</label>
+                        <select onchange="updateFontFamily(${index}, this.value)">
+                            <option value="Arial" ${block.fontFamily === 'Arial' ? 'selected' : ''}>Arial</option>
+                            <option value="Verdana" ${block.fontFamily === 'Verdana' ? 'selected' : ''}>Verdana</option>
+                            <option value="Tahoma" ${block.fontFamily === 'Tahoma' ? 'selected' : ''}>Tahoma</option>
+                            <option value="Georgia" ${block.fontFamily === 'Georgia' ? 'selected' : ''}>Georgia</option>
+                            <option value="Courier New" ${block.fontFamily === 'Courier New' ? 'selected' : ''}>Courier New</option>
+                        </select>
+                        <label>Glow Radius:</label>
+                        <input type="number" value="${block.glowRadius}" min="1" max="20" step="1" onchange="updateGlowRadius(${index}, this.value)">
+                        <button class="button" style="background-color: red;" onclick="deleteTextBlock(${index})">Delete</button>
+                    </div>
+                `;
+                textBlocksContainer.appendChild(blockControl);
+            });
+        }
+
+        function updateText(index, value) {
+            textBlocks[index].text = value;
+            drawMeme();
+        }
+
+        function insertSpecialCharacter(index) {
+            Swal.fire({
+                title: 'Select Special Character',
+                html: `
+                    <button onclick="addCharacter(${index}, '■')">■</button>
+                    <button onclick="addCharacter(${index}, '▲')">▲</button>
+                    <button onclick="addCharacter(${index}, '●')">●</button>
+                    <button onclick="addCharacter(${index}, '◆')">◆</button>
+                `,
+                showConfirmButton: false,
+                showCloseButton: true
+            });
+        }
+
+        function addCharacter(index, character) {
+            textBlocks[index].text += character;
+            Swal.close();
+            renderTextBlockControls();
+            drawMeme();
+        }
+
+        function updateFontSize(index, value) {
+            textBlocks[index].fontSize = parseInt(value, 10);
+            drawMeme();
+        }
+
+        function updateFontFamily(index, value) {
+            textBlocks[index].fontFamily = value;
+            drawMeme();
+        }
+
+        function updateGlowRadius(index, value) {
+            textBlocks[index].glowRadius = parseInt(value, 10);
+            drawMeme();
+        }
+
+        function deleteTextBlock(index) {
+            textBlocks.splice(index, 1);
+            renderTextBlockControls();
+            drawMeme();
+        }
+
+        function addTextBlock(x, y) {
+            textBlocks.push({
+                text: '■',
+                x: x != undefined? x : memeCanvas.width / (2 * devicePixelRatio),
+                y: y ?? memeCanvas.height / (2 * devicePixelRatio),
+                fontSize: 40,
+                fontFamily: 'Courier New',
+                glowRadius: 35,
+                isDragging: false
+            });
+            renderTextBlockControls();
+            drawMeme();
+        }
+
+        memeCanvas.addEventListener('mousedown', (event) => {
+            const rect = memeCanvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+
+            textBlocks.forEach((block) => {
+                const textWidth = ctx.measureText(block.text).width;
+                const textHeight = block.fontSize;
+                if (
+                    x > block.x - textWidth / 2 &&
+                    x < block.x + textWidth / 2 &&
+                    y > block.y - textHeight / 2 &&
+                    y < block.y + textHeight / 2
+                ) {
+                    block.isDragging = true;
+                }
+            });
+        });
+
+        memeCanvas.addEventListener('mousemove', (event) => {
+            const rect = memeCanvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+
+            textBlocks.forEach((block) => {
+                if (block.isDragging) {
+                    block.x = x;
+                    block.y = y;
+                    drawMeme();
+                }
+            });
+        });
+
+        memeCanvas.addEventListener('mouseup', () => {
+            textBlocks.forEach((block) => (block.isDragging = false));
+        });
+        addTextBlock(200,200);
+        addTextBlock(310,165);
+        setImage('silvio.jpg');
+        renderTextBlockControls();
+        drawMeme();
+    </script>
+</body>
+</html>
