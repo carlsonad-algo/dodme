@@ -58,12 +58,15 @@
             background-color: limegreen;
             color: white;
         }
-
+        input[type="number"] {
+            width: 40px;
+        }
         .delete {
-            font-size: 25px;
+            font-size: 20px;
             background-color: white;
             color: red;
             padding: 0px 10px;
+            font-weight: bold;
         }
         .delete:hover {
             background-color: red;
@@ -116,18 +119,21 @@
         }
 
         function drawMeme() {
+            ctx.clearRect(0, 0, memeCanvas.width, memeCanvas.height);
             addImageWithGrayScale();
 
             textBlocks.forEach((block) => {
+                ctx.save();
+                ctx.translate(block.x, block.y);
+                ctx.rotate(block.rotation * Math.PI / 180);
                 ctx.font = `${block.fontSize}px ${block.fontFamily}`;
+                ctx.shadowBlur = block.glowRadius;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.shadowColor = 'lime';
-                ctx.shadowBlur = block.glowRadius;
                 ctx.fillStyle = 'lime';
-                ctx.fillText(block.text, block.x, block.y);
-                ctx.shadowColor = 'transparent';
-                ctx.shadowBlur = 0;
+                ctx.fillText(block.text, 0, 0);
+                ctx.restore();
             });
         }
 
@@ -158,12 +164,9 @@
                         <label>Text:</label>
                         <input type="text" value="${block.text}" oninput="updateText(${index}, this.value)">
                         <button class="addCharacterButton" onclick="addCharacter(${index}, '■')">■</button>
-                        <button class="addCharacterButton" onclick="addCharacter(${index}, '▲')">▲</button>
                         <button class="addCharacterButton" onclick="addCharacter(${index}, '●')">●</button>
-                        <button class="addCharacterButton" onclick="addCharacter(${index}, '◆')">◆</button>
                         <label>Font Size:</label>
-                        <input type="range" value="${block.fontSize}" min="10" max="200" step="2" onchange="updateFontSize(${index}, this.value)">
-                        <span id="fontSizeValue${index}">${block.fontSize}</span>
+                        <input type="number" value="${block.fontSize}" min="10" max="200" step="5" onchange="updateFontSize(${index}, this.value)">
                         <label>Font Family:</label>
                         <select onchange="updateFontFamily(${index}, this.value)">
                             <option value="Arial" ${block.fontFamily === 'Arial' ? 'selected' : ''}>Arial</option>
@@ -173,8 +176,9 @@
                             <option value="Courier New" ${block.fontFamily === 'Courier New' ? 'selected' : ''}>Courier New</option>
                         </select>
                         <label>Glow Radius:</label>
-                        <input type="range" value="${block.glowRadius}" min="1" max="200" step="1" onchange="updateGlowRadius(${index}, this.value)">
-                        <span id="glowRadiusValue${index}">${block.glowRadius}</span>
+                        <input type="number" value="${block.glowRadius}" min="1" max="200" step="5" onchange="updateGlowRadius(${index}, this.value)">
+                        <label>Rotation:</label>
+                        <input type="number" value="${block.rotation}" min="-180" max="180" step="5" onchange="updateRotation(${index}, this.value)">
                         <button class="button delete" onclick="deleteTextBlock(${index})">🗑</button>
                     </div>
                 `;
@@ -195,7 +199,6 @@
 
         function updateFontSize(index, value) {
             textBlocks[index].fontSize = value;
-            document.getElementById(`fontSizeValue${index}`).innerText = value;
             drawMeme();
         }
 
@@ -206,7 +209,11 @@
 
         function updateGlowRadius(index, value) {
             textBlocks[index].glowRadius = value;
-            document.getElementById(`glowRadiusValue${index}`).innerText = value;
+            drawMeme();
+        }
+
+        function updateRotation(index, value) {
+            textBlocks[index].rotation = value;
             drawMeme();
         }
 
@@ -216,14 +223,15 @@
             drawMeme();
         }
 
-        function addTextBlock(x, y) {
+        function addTextBlock(x, y, rotation) {
             textBlocks.push({
                 text: '■',
-                x: x != undefined? x : memeCanvas.width / (2 * devicePixelRatio),
+                x: x ?? memeCanvas.width / (2 * devicePixelRatio),
                 y: y ?? memeCanvas.height / (2 * devicePixelRatio),
                 fontSize: 40,
                 fontFamily: 'Courier New',
                 glowRadius: 35,
+                rotation: rotation ?? 0,
                 isDragging: false
             });
             renderTextBlockControls();
@@ -266,8 +274,8 @@
         memeCanvas.addEventListener('mouseup', () => {
             textBlocks.forEach((block) => (block.isDragging = false));
         });
-        addTextBlock(200,200);
-        addTextBlock(310,165);
+        addTextBlock(200,200, -20);
+        addTextBlock(310,165, -20);
         setImage('silvio.jpg');
         renderTextBlockControls();
         drawMeme();
