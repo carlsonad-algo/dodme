@@ -6,7 +6,6 @@
     <title>DOD Me</title>
     <style>
         body {
-            font-family: 'Roboto', sans-serif;
             text-align: center;
             margin: 20px;
             background-color: #1a1a1a;
@@ -78,7 +77,8 @@
     <h1>DOD Me</h1>
     <input type="file" id="imageUpload" accept="image/*">
     <div id="textBlocksContainer"></div>
-    <button class="button" onclick="addTextBlock()">Add Text Block</button>
+    <button class="button" onclick="addTextBlock({...defaultMemeText});">Add Text</button>
+    <button class="button" onclick="addTextBlock({...defaultEye});">Add Glow Eye</button>
     <div>
     <canvas id="memeCanvas"></canvas>
     </div>
@@ -87,6 +87,29 @@
         const memeCanvas = document.getElementById('memeCanvas');
         const textBlocksContainer = document.getElementById('textBlocksContainer');
         const ctx = memeCanvas.getContext('2d');
+        
+        const defaultEye = {
+            text: '■',
+            x: memeCanvas.width / (2),
+            y: memeCanvas.height / (2),
+            fontSize: 40,
+            fontFamily: 'Courier New',
+            glowRadius: 35,
+            foregroundColor: '#00ff00',
+            glowColor: '#00ff00',
+            rotation: 0,
+            isDragging: false
+        };
+
+        const defaultMemeText = {
+            ...defaultEye,
+            text: 'TEXT',
+            fontSize: 35,
+            fontFamily: 'Impact',
+            glowRadius: 20,
+            glowColor: '#000000',
+        };
+
         let uploadedImage;
         let textBlocks = [];
         const devicePixelRatio = window.devicePixelRatio || 1;
@@ -130,9 +153,12 @@
                 ctx.shadowBlur = block.glowRadius;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.shadowColor = 'lime';
-                ctx.fillStyle = 'lime';
+                ctx.fillStyle = block.foregroundColor;
+                ctx.shadowColor = block.glowColor;
+                ctx.glowColor = block.glowColor;
+                ctx.strokeStyle = block.glowColor;
                 ctx.fillText(block.text, 0, 0);
+                ctx.strokeText(block.text, 0, 0);
                 ctx.restore();
             });
         }
@@ -162,7 +188,7 @@
                 blockControl.innerHTML = `
                     <div style="margin: 10px; border: 1px solid #ccc; padding: 10px;">
                         <label>Text:</label>
-                        <input type="text" value="${block.text}" oninput="updateText(${index}, this.value)">
+                        <input type="text" id="text${index}" value="${block.text}" oninput="updateText(${index}, this.value)">
                         <button class="addCharacterButton" onclick="addCharacter(${index}, '■')">■</button>
                         <button class="addCharacterButton" onclick="addCharacter(${index}, '●')">●</button>
                         <label>Font Size:</label>
@@ -173,12 +199,21 @@
                             <option value="Verdana" ${block.fontFamily === 'Verdana' ? 'selected' : ''}>Verdana</option>
                             <option value="Tahoma" ${block.fontFamily === 'Tahoma' ? 'selected' : ''}>Tahoma</option>
                             <option value="Georgia" ${block.fontFamily === 'Georgia' ? 'selected' : ''}>Georgia</option>
+                            <option value="Impact" ${block.fontFamily === 'Impact' ? 'selected' : ''}>Impact</option>
                             <option value="Courier New" ${block.fontFamily === 'Courier New' ? 'selected' : ''}>Courier New</option>
+                            <option value="Comic Sans MS" ${block.fontFamily === 'Comic Sans MS' ? 'selected' : ''}>Comic Sans MS</option>
+                            <option value="Montserrat" ${block.fontFamily === 'Montserrat' ? 'selected' : ''}>Montserrat</option>
+                            <option value="Myriad Pro" ${block.fontFamily === 'Myriad Pro' ? 'selected' : ''}>Myriad Pro</option>
+                            <option value="Helvetica" ${block.fontFamily === 'Helvetica' ? 'selected' : ''}>Helvetica</option>
                         </select>
                         <label>Glow Radius:</label>
                         <input type="number" value="${block.glowRadius}" min="1" max="200" step="5" onchange="updateGlowRadius(${index}, this.value)">
                         <label>Rotation:</label>
                         <input type="number" value="${block.rotation}" min="-180" max="180" step="5" onchange="updateRotation(${index}, this.value)">
+                        <label>Font Color:</label>
+                        <input type="color" value="${block.foregroundColor}" onchange="updateForegroundColor(${index}, this.value)">
+                        <label>Glow Color:</label>
+                        <input type="color" value="${block.glowColor}" onchange="updateGlowColor(${index}, this.value)">
                         <button class="button delete" onclick="deleteTextBlock(${index})">🗑</button>
                     </div>
                 `;
@@ -192,9 +227,11 @@
         }
         
         function addCharacter(index, character) {
-            textBlocks[index].text += character;
-            renderTextBlockControls();
-            drawMeme();
+            var textBox = document.getElementById('text'+index);
+            const [start, end] = [textBox.selectionStart, textBox.selectionEnd];
+            textBox.setRangeText(character, start, end, 'end');
+            textBox.focus();
+            textBox.oninput(index, textBox.value);
         }
 
         function updateFontSize(index, value) {
@@ -217,23 +254,24 @@
             drawMeme();
         }
 
+        function updateForegroundColor(index, value) {
+            textBlocks[index].foregroundColor = value;
+            drawMeme();
+        }
+
+        function updateGlowColor(index, value) {
+            textBlocks[index].glowColor = value;
+            drawMeme();
+        }
+
         function deleteTextBlock(index) {
             textBlocks.splice(index, 1);
             renderTextBlockControls();
             drawMeme();
         }
 
-        function addTextBlock(x, y, rotation) {
-            textBlocks.push({
-                text: '■',
-                x: x ?? memeCanvas.width / (2 * devicePixelRatio),
-                y: y ?? memeCanvas.height / (2 * devicePixelRatio),
-                fontSize: 40,
-                fontFamily: 'Courier New',
-                glowRadius: 35,
-                rotation: rotation ?? 0,
-                isDragging: false
-            });
+        function addTextBlock(data) {
+            textBlocks.push(data);
             renderTextBlockControls();
             drawMeme();
         }
@@ -243,18 +281,28 @@
             const x = event.clientX - rect.left;
             const y = event.clientY - rect.top;
 
-            textBlocks.forEach((block) => {
+            for (const block of textBlocks) {
+
+                ctx.save();
+                ctx.font = `${block.fontSize}px ${block.fontFamily}`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = block.foregroundColor;
+                ctx.shadowColor = block.glowColor;
                 const textWidth = ctx.measureText(block.text).width;
+                ctx.restore();
+
                 const textHeight = block.fontSize;
                 if (
-                    x > block.x - textWidth / 2 &&
-                    x < block.x + textWidth / 2 &&
-                    y > block.y - textHeight / 2 &&
-                    y < block.y + textHeight / 2
+                    x > block.x - textWidth &&
+                    x < block.x + textWidth &&
+                    y > block.y - textHeight &&
+                    y < block.y + textHeight
                 ) {
                     block.isDragging = true;
+                    break;
                 }
-            });
+            }
         });
 
         memeCanvas.addEventListener('mousemove', (event) => {
@@ -274,8 +322,11 @@
         memeCanvas.addEventListener('mouseup', () => {
             textBlocks.forEach((block) => (block.isDragging = false));
         });
-        addTextBlock(200,200, -20);
-        addTextBlock(310,165, -20);
+
+        textBlocks.push({...defaultEye, x: 200, y: 200, rotation: -20});
+        textBlocks.push({...defaultEye, x: 310, y: 165, rotation: -20});
+        textBlocks.push({...defaultMemeText, text : "AND THAT'S HOW I ALMOST DIED OF DYSINTARY!!", x: 345, y: 420});
+
         setImage('silvio.jpg');
         renderTextBlockControls();
         drawMeme();
