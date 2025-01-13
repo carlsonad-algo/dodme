@@ -3,8 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P" rel="stylesheet">
     <title>DOD Me</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+    
+        /* html, button, input, select {
+            font-family: "Press Start 2P", serif;
+            font-weight: 400;
+            font-style: normal;
+        } */
         body {
             text-align: center;
             margin: 20px;
@@ -12,7 +22,7 @@
             color: #f0f0f0;
         }
         h1 {
-            color: limegreen;
+            color: #00ff00;
         }
         canvas {
             margin-top: 20px;
@@ -86,7 +96,7 @@
         const imageUpload = document.getElementById('imageUpload');
         const memeCanvas = document.getElementById('memeCanvas');
         const textBlocksContainer = document.getElementById('textBlocksContainer');
-        const ctx = memeCanvas.getContext('2d');
+        const ctx = memeCanvas.getContext('2d', { willReadFrequently: true });
         
         const defaultEye = {
             text: '■',
@@ -150,7 +160,7 @@
                 try{
                 ctx.translate(block.x, block.y);
                 ctx.rotate(block.rotation * Math.PI / 180);
-                ctx.font = `${block.fontSize}px ${block.fontFamily}`;
+                ctx.font = `${block.fontSize}px "${block.fontFamily}"`;
                 ctx.shadowBlur = block.glowRadius;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
@@ -158,8 +168,9 @@
                 ctx.shadowColor = block.glowColor;
                 ctx.glowColor = block.glowColor;
                 ctx.strokeStyle = block.glowColor;
+                
                 ctx.fillText(block.text, 0, 0);
-                ctx.shadowBlur = 3;
+                ctx.shadowBlur = 2;
                 ctx.strokeText(block.text, 0, 0);
             }
                 finally  {
@@ -205,6 +216,7 @@
                             <option value="Tahoma" ${block.fontFamily === 'Tahoma' ? 'selected' : ''}>Tahoma</option>
                             <option value="Georgia" ${block.fontFamily === 'Georgia' ? 'selected' : ''}>Georgia</option>
                             <option value="Impact" ${block.fontFamily === 'Impact' ? 'selected' : ''}>Impact</option>
+                            <option value="Press Start 2P" ${block.fontFamily === 'Press Start 2P' ? 'selected' : ''}>Press Start 2P</option>
                             <option value="Courier New" ${block.fontFamily === 'Courier New' ? 'selected' : ''}>Courier New</option>
                             <option value="Comic Sans MS" ${block.fontFamily === 'Comic Sans MS' ? 'selected' : ''}>Comic Sans MS</option>
                             <option value="Montserrat" ${block.fontFamily === 'Montserrat' ? 'selected' : ''}>Montserrat</option>
