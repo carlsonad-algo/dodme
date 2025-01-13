@@ -147,6 +147,7 @@
 
             textBlocks.forEach((block) => {
                 ctx.save();
+                try{
                 ctx.translate(block.x, block.y);
                 ctx.rotate(block.rotation * Math.PI / 180);
                 ctx.font = `${block.fontSize}px ${block.fontFamily}`;
@@ -158,8 +159,12 @@
                 ctx.glowColor = block.glowColor;
                 ctx.strokeStyle = block.glowColor;
                 ctx.fillText(block.text, 0, 0);
+                ctx.shadowBlur = 3;
                 ctx.strokeText(block.text, 0, 0);
-                ctx.restore();
+            }
+                finally  {
+                    ctx.restore();
+                }
             });
         }
 
@@ -284,23 +289,26 @@
             for (const block of textBlocks) {
 
                 ctx.save();
-                ctx.font = `${block.fontSize}px ${block.fontFamily}`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillStyle = block.foregroundColor;
-                ctx.shadowColor = block.glowColor;
-                const textWidth = ctx.measureText(block.text).width;
-                ctx.restore();
-
-                const textHeight = block.fontSize;
-                if (
-                    x > block.x - textWidth &&
-                    x < block.x + textWidth &&
-                    y > block.y - textHeight &&
-                    y < block.y + textHeight
-                ) {
-                    block.isDragging = true;
-                    break;
+                try {
+                    ctx.font = `${block.fontSize}px ${block.fontFamily}`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillStyle = block.foregroundColor;
+                    ctx.shadowColor = block.glowColor;
+                    const textWidth = ctx.measureText(block.text).width;
+                    const textHeight = block.fontSize;
+                    if (
+                        x > block.x - textWidth &&
+                        x < block.x + textWidth &&
+                        y > block.y - textHeight &&
+                        y < block.y + textHeight
+                    ) {
+                        block.isDragging = true;
+                        break;
+                    }
+                }
+                finally {
+                    ctx.restore();
                 }
             }
         });
