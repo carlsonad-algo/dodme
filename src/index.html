@@ -170,7 +170,7 @@
                 ctx.strokeStyle = block.glowColor;
                 
                 ctx.fillText(block.text, 0, 0);
-                ctx.shadowBlur = 2;
+                ctx.shadowBlur = 1;
                 ctx.strokeText(block.text, 0, 0);
             }
                 finally  {
@@ -302,7 +302,7 @@
 
                 ctx.save();
                 try {
-                    ctx.font = `${block.fontSize}px ${block.fontFamily}`;
+                    ctx.font = `${block.fontSize}px "${block.fontFamily}"`;
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.fillStyle = block.foregroundColor;
