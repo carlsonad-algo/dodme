@@ -119,6 +119,7 @@
         <option value="blueChannel">Blue Channel</option>
         <option value="decompositionMax">Decomposition Max</option>
         <option value="decompositionMin">Decomposition Min</option>
+        <option value="greenScale">Green Scale</option>
         <option value="none">None</option>
     </select>
 
@@ -267,6 +268,11 @@
                         case 'decompositionMin':
                             gray = Math.min(r, g, b);
                             break;
+                        case 'greenScale':
+                            data[i] = 0; // Red channel
+                            data[i + 1] = g; // Green channel
+                            data[i + 2] = 0; // Blue channel
+                            continue;
                         default:
                             return; // No filter
                     }
