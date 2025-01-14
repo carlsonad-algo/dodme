@@ -91,6 +91,11 @@
             color: white;
         }
 
+        .move {
+            font-size: 20px;
+            padding: 0px 2px;
+        }
+
     </style>
 </head>
 <body>
@@ -171,28 +176,28 @@
             ctx.clearRect(0, 0, memeCanvas.width, memeCanvas.height);
             addImageWithGrayScale();
 
-            textBlocks.forEach((block) => {
+            [...textBlocks].reverse().forEach((block) => {
                 ctx.save();
                 try{
-                ctx.translate(block.x, block.y);
-                ctx.rotate(block.rotation * Math.PI / 180);
-                ctx.font = `${block.fontSize}px "${block.fontFamily}"`;
-                ctx.shadowBlur = block.glowRadius;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillStyle = block.foregroundColor;
-                ctx.shadowColor = block.glowColor;
-                ctx.glowColor = block.glowColor;
-                ctx.strokeStyle = block.glowColor;
-                
-                //I don't see another way to increase the glow intensity besides drawing the text multiple times
-                for( let i = 0; i < block.glowIntensity; i++) {
-                    ctx.fillText(block.text, 0, 0);
-                }
+                    ctx.translate(block.x, block.y);
+                    ctx.rotate(block.rotation * Math.PI / 180);
+                    ctx.font = `${block.fontSize}px "${block.fontFamily}"`;
+                    ctx.shadowBlur = block.glowRadius;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillStyle = block.foregroundColor;
+                    ctx.shadowColor = block.glowColor;
+                    ctx.glowColor = block.glowColor;
+                    ctx.strokeStyle = block.glowColor;
+                    
+                    //I don't see another way to increase the glow intensity besides drawing the text multiple times
+                    for( let i = 0; i < block.glowIntensity; i++) {
+                        ctx.fillText(block.text, 0, 0);
+                    }
 
-                ctx.shadowBlur = 1;
-                ctx.strokeText(block.text, 0, 0);
-            }
+                    ctx.shadowBlur = 1;
+                    ctx.strokeText(block.text, 0, 0);
+                }
                 finally  {
                     ctx.restore();
                 }
@@ -223,6 +228,8 @@
                 const blockControl = document.createElement('div');
                 blockControl.innerHTML = `
                     <div style="margin: 10px; border: 1px solid #ccc; padding: 10px;">
+                        <button class="button move" onclick="moveTextBlockUp(${index})">▲</button>
+                        <button class="button move" onclick="moveTextBlockDown(${index})">▼</button>
                         <label>Text:</label>
                         <input type="text" id="text${index}" value="${block.text}" oninput="updateText(${index}, this.value)">
                         <button class="addCharacterButton" onclick="addCharacter(${index}, '■')">■</button>
@@ -255,6 +262,7 @@
                         <input type="color" value="${block.glowColor}" onchange="updateGlowColor(${index}, this.value)">
                         <button class="button locked" onclick="toggleLocked(${index})">${block.locked ? "&#128274":"&#128275"}</button>
                         <button class="button delete" onclick="deleteTextBlock(${index})">🗑</button>
+                        
                     </div>
                 `;
                 textBlocksContainer.appendChild(blockControl);
@@ -327,7 +335,22 @@
             drawMeme();
         }
 
-        
+        function moveTextBlockUp(index) {
+            if (index > 0) {
+                [textBlocks[index - 1], textBlocks[index]] = [textBlocks[index], textBlocks[index - 1]];
+                renderTextBlockControls();
+                drawMeme();
+            }
+        }
+
+        function moveTextBlockDown(index) {
+            if (index < textBlocks.length - 1) {
+                [textBlocks[index + 1], textBlocks[index]] = [textBlocks[index], textBlocks[index + 1]];
+                renderTextBlockControls();
+                drawMeme();
+            }
+        }
+
         function getMousePos(canvas, evt) {
             const rect = canvas.getBoundingClientRect();
             return {
