@@ -104,8 +104,9 @@
             y: memeCanvas.height / (2),
             fontSize: 40,
             fontFamily: 'Courier New',
-            glowRadius: 35,
             foregroundColor: '#00ff00',
+            glowRadius: 50,
+            glowIntensity: 4,
             glowColor: '#00ff00',
             rotation: 0,
             isDragging: false
@@ -118,6 +119,7 @@
             fontFamily: 'Impact',
             glowRadius: 20,
             glowColor: '#000000',
+            glowIntensity: 2,
         };
 
         let uploadedImage;
@@ -169,7 +171,11 @@
                 ctx.glowColor = block.glowColor;
                 ctx.strokeStyle = block.glowColor;
                 
-                ctx.fillText(block.text, 0, 0);
+                //I don't see another way to increase the glow intensity besides drawing the text multiple times
+                for( let i = 0; i < block.glowIntensity; i++) {
+                    ctx.fillText(block.text, 0, 0);
+                }
+
                 ctx.shadowBlur = 1;
                 ctx.strokeText(block.text, 0, 0);
             }
@@ -225,6 +231,8 @@
                         </select>
                         <label>Glow Radius:</label>
                         <input type="number" value="${block.glowRadius}" min="1" max="200" step="5" onchange="updateGlowRadius(${index}, this.value)">
+                        <label>Glow Intensity:</label>
+                        <input type="number" value="${block.glowIntensity}" min="1" max="20" step="1" onchange="updateGlowIntensity(${index}, this.value)">
                         <label>Rotation:</label>
                         <input type="number" value="${block.rotation}" min="-180" max="180" step="5" onchange="updateRotation(${index}, this.value)">
                         <label>Font Color:</label>
@@ -263,6 +271,11 @@
 
         function updateGlowRadius(index, value) {
             textBlocks[index].glowRadius = value;
+            drawMeme();
+        }
+
+        function updateGlowIntensity(index, value) {
+            textBlocks[index].glowIntensity = value;
             drawMeme();
         }
 
