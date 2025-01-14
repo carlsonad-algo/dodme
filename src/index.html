@@ -125,7 +125,9 @@
         let uploadedImage;
         let textBlocks = [];
         const devicePixelRatio = window.devicePixelRatio || 1;
-
+        let selectedTextBlock = null;
+        let offsetX, offsetY;
+        
         imageUpload.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
@@ -306,54 +308,66 @@
             drawMeme();
         }
 
-        memeCanvas.addEventListener('mousedown', (event) => {
-            const rect = memeCanvas.getBoundingClientRect();
-            const x = event.clientX - rect.left;
-            const y = event.clientY - rect.top;
+        
+        function getMousePos(canvas, evt) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: evt.clientX - rect.left,
+                y: evt.clientY - rect.top
+            };
+        }
 
-            for (const block of textBlocks) {
+        function getBlockWidth(block) {
+            ctx.save();
+            try {
+                ctx.font = `${block.fontSize}px "${block.fontFamily}"`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                return ctx.measureText(block.text).width;
+            }
+            finally {
+                ctx.restore();
+            }
+        }
 
-                ctx.save();
-                try {
-                    ctx.font = `${block.fontSize}px "${block.fontFamily}"`;
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillStyle = block.foregroundColor;
-                    ctx.shadowColor = block.glowColor;
-                    const textWidth = ctx.measureText(block.text).width;
-                    const textHeight = block.fontSize;
-                    if (
-                        x > block.x - textWidth &&
-                        x < block.x + textWidth &&
-                        y > block.y - textHeight &&
-                        y < block.y + textHeight
-                    ) {
-                        block.isDragging = true;
-                        break;
-                    }
-                }
-                finally {
-                    ctx.restore();
-                }
+        function isPointInRotatedRect(x, y, rectX, rectY, width, height, rotation) {
+            const rad = rotation * Math.PI / 180;
+            const cos = Math.cos(rad);
+            const sin = Math.sin(rad);
+
+            const dx = x - rectX;
+            const dy = y - rectY;
+
+            const hdx = cos * dx + sin * dy;
+            const hdy = cos * dy - sin * dx;
+
+            return hdx >= -width / 2 && hdx <= width / 2 && hdy >= -height / 2 && hdy <= height / 2;
+        }
+
+        memeCanvas.addEventListener('mousedown', (e) => {
+            const mousePos = getMousePos(memeCanvas, e);
+            selectedTextBlock = textBlocks.find(block => {
+                const textWidth = getBlockWidth(block);
+                const textHeight = block.fontSize;
+                return isPointInRotatedRect(mousePos.x, mousePos.y, block.x, block.y, textWidth, textHeight, block.rotation);
+            });
+            if (selectedTextBlock) {
+                offsetX = mousePos.x - selectedTextBlock.x;
+                offsetY = mousePos.y - selectedTextBlock.y;
             }
         });
 
-        memeCanvas.addEventListener('mousemove', (event) => {
-            const rect = memeCanvas.getBoundingClientRect();
-            const x = event.clientX - rect.left;
-            const y = event.clientY - rect.top;
-
-            textBlocks.forEach((block) => {
-                if (block.isDragging) {
-                    block.x = x;
-                    block.y = y;
-                    drawMeme();
-                }
-            });
+        memeCanvas.addEventListener('mousemove', (e) => {
+            if (selectedTextBlock) {
+                const mousePos = getMousePos(memeCanvas, e);
+                selectedTextBlock.x = mousePos.x - offsetX;
+                selectedTextBlock.y = mousePos.y - offsetY;
+                drawMeme();
+            }
         });
 
         memeCanvas.addEventListener('mouseup', () => {
-            textBlocks.forEach((block) => (block.isDragging = false));
+            selectedTextBlock = null;
         });
 
         textBlocks.push({...defaultEye, x: 200, y: 200, rotation: -20});
