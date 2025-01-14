@@ -96,12 +96,13 @@
 <body>
     <h1>DOD Me</h1>
     <input type="file" id="imageUpload" accept="image/*">
-    <div id="textBlocksContainer"></div>
+    <h3>Click and drag with mouse to move blocks</h3>
+    <div>
+        <canvas id="memeCanvas"></canvas>
+    </div>
     <button class="button" onclick="addTextBlock({...defaultMemeText});">Add Text</button>
     <button class="button" onclick="addTextBlock({...defaultEye});">Add Glow Eye</button>
-    <div>
-    <canvas id="memeCanvas"></canvas>
-    </div>
+    <div id="textBlocksContainer"></div>
     <script>
         const imageUpload = document.getElementById('imageUpload');
         const memeCanvas = document.getElementById('memeCanvas');
