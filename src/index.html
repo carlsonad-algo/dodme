@@ -81,7 +81,6 @@
             background-color: red;
             color: white;
         }
-
         .locked {
             font-size: 20px;
             color: red;
@@ -90,10 +89,17 @@
         .locked:hover {
             color: white;
         }
-
         .move {
             font-size: 20px;
             padding: 0px 2px;
+        }
+        .block{
+            margin: 10px; 
+            border: 2px solid #ccc; 
+            padding: 5px;
+        }
+        .selected{
+            border-color: green; 
         }
 
     </style>
@@ -222,10 +228,8 @@
         function addImageWithGrayScale() {
             if (uploadedImage) {
                 ctx.drawImage(uploadedImage, 0, 0);
-
+               
                 const option = document.getElementById('grayscaleOptions').value;
-     
-
                 // Convert image to grayscale
                 const imageData = ctx.getImageData(0, 0, memeCanvas.width, memeCanvas.height);
                 const data = imageData.data;
@@ -280,7 +284,7 @@
             textBlocks.forEach((block, index) => {
                 const blockControl = document.createElement('div');
                 blockControl.innerHTML = `
-                    <div style="margin: 10px; border: 1px solid #ccc; padding: 10px;">
+                    <div id="block_${index}" class="block">
                         <button class="button move" onclick="moveTextBlockUp(${index})">▲</button>
                         <button class="button move" onclick="moveTextBlockDown(${index})">▼</button>
                         <label>Text:</label>
@@ -376,7 +380,6 @@
             drawMeme();
         }
 
-        
         function toggleLocked(index) {
             textBlocks[index].locked = !textBlocks[index].locked;
             renderTextBlockControls();
@@ -450,6 +453,14 @@
             if (selectedTextBlock) {
                 offsetX = mousePos.x - selectedTextBlock.x;
                 offsetY = mousePos.y - selectedTextBlock.y;
+                textBlocks.forEach((block, index) => {
+                    var blockElement = document.getElementById('block_'+index);
+                    if (selectedTextBlock == block) {
+                        blockElement.classList.add('selected');
+                    } else {
+                        blockElement.classList.remove('selected');
+                    }
+                });
             }
         });
 
