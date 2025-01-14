@@ -120,6 +120,7 @@
         <option value="decompositionMax">Decomposition Max</option>
         <option value="decompositionMin">Decomposition Min</option>
         <option value="greenScale">Green Scale</option>
+        <option value="greenScaleLight">Green Scale Light</option>
         <option value="none">None</option>
     </select>
 
@@ -272,6 +273,11 @@
                             data[i] = 0; // Red channel
                             data[i + 1] = g; // Green channel
                             data[i + 2] = 0; // Blue channel
+                            continue;
+                        case 'greenScaleLight':
+                            data[i] = g / 1.25; // Red channel
+                            data[i + 1] = g; // Green channel
+                            data[i + 2] = g / 1.25; // Blue channel
                             continue;
                         default:
                             return; // No filter
