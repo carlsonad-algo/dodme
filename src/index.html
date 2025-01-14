@@ -81,6 +81,16 @@
             background-color: red;
             color: white;
         }
+
+        .locked {
+            font-size: 20px;
+            color: red;
+            padding: 0px 2px;
+        }
+        .locked:hover {
+            color: white;
+        }
+
     </style>
 </head>
 <body>
@@ -109,7 +119,8 @@
             glowIntensity: 4,
             glowColor: '#00ff00',
             rotation: 0,
-            isDragging: false
+            isDragging: false,
+            locked: false
         };
 
         const defaultMemeText = {
@@ -127,7 +138,7 @@
         const devicePixelRatio = window.devicePixelRatio || 1;
         let selectedTextBlock = null;
         let offsetX, offsetY;
-        
+
         imageUpload.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
@@ -241,6 +252,7 @@
                         <input type="color" value="${block.foregroundColor}" onchange="updateForegroundColor(${index}, this.value)">
                         <label>Glow Color:</label>
                         <input type="color" value="${block.glowColor}" onchange="updateGlowColor(${index}, this.value)">
+                        <button class="button locked" onclick="toggleLocked(${index})">${block.locked ? "&#128274":"&#128275"}</button>
                         <button class="button delete" onclick="deleteTextBlock(${index})">🗑</button>
                     </div>
                 `;
@@ -302,6 +314,12 @@
             drawMeme();
         }
 
+        
+        function toggleLocked(index) {
+            textBlocks[index].locked = !textBlocks[index].locked;
+            renderTextBlockControls();
+        }
+
         function addTextBlock(data) {
             textBlocks.push(data);
             renderTextBlockControls();
@@ -347,6 +365,7 @@
         memeCanvas.addEventListener('mousedown', (e) => {
             const mousePos = getMousePos(memeCanvas, e);
             selectedTextBlock = textBlocks.find(block => {
+                if (block.locked) return false;
                 const textWidth = getBlockWidth(block);
                 const textHeight = block.fontSize;
                 return isPointInRotatedRect(mousePos.x, mousePos.y, block.x, block.y, textWidth, textHeight, block.rotation);
