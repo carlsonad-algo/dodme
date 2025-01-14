@@ -101,6 +101,20 @@
 <body>
     <h1>DOD Me</h1>
     <input type="file" id="imageUpload" accept="image/*">
+
+    Gray Scale Mode:
+    <select id="grayscaleOptions" onchange="drawMeme()">
+        <option value="average">Average</option>
+        <option value="luminosity">Luminosity</option>
+        <option value="desaturation">Desaturation</option>
+        <option value="redChannel">Red Channel</option>
+        <option value="greenChannel">Green Channel</option>
+        <option value="blueChannel">Blue Channel</option>
+        <option value="decompositionMax">Decomposition Max</option>
+        <option value="decompositionMin">Decomposition Min</option>
+        <option value="none">None</option>
+    </select>
+
     <h3>Click and drag with mouse to move blocks</h3>
     <div>
         <canvas id="memeCanvas"></canvas>
@@ -208,13 +222,48 @@
             if (uploadedImage) {
                 ctx.drawImage(uploadedImage, 0, 0);
 
+                const option = document.getElementById('grayscaleOptions').value;
+     
+
                 // Convert image to grayscale
                 const imageData = ctx.getImageData(0, 0, memeCanvas.width, memeCanvas.height);
-                for (let i = 0; i < imageData.data.length; i += 4) {
-                    const avg = (imageData.data[i] + imageData.data[i + 1] + imageData.data[i + 2]) / 3;
-                    imageData.data[i] = avg;
-                    imageData.data[i + 1] = avg;
-                    imageData.data[i + 2] = avg;
+                const data = imageData.data;
+                for (let i = 0; i < data.length; i += 4) {
+                    let gray;
+                    const r = data[i];
+                    const g = data[i + 1];
+                    const b = data[i + 2];
+
+                    switch (option) {
+                        case 'average':
+                            gray = (r + g + b) / 3;
+                            break;
+                        case 'luminosity':
+                            gray = 0.21 * r + 0.72 * g + 0.07 * b;
+                            break;
+                        case 'desaturation':
+                            gray = (Math.max(r, g, b) + Math.min(r, g, b)) / 2;
+                            break;
+                        case 'redChannel':
+                            gray = r;
+                            break;
+                        case 'greenChannel':
+                            gray = g;
+                            break;
+                        case 'blueChannel':
+                            gray = b;
+                            break;
+                        case 'decompositionMax':
+                            gray = Math.max(r, g, b);
+                            break;
+                        case 'decompositionMin':
+                            gray = Math.min(r, g, b);
+                            break;
+                        default:
+                            return; // No filter
+                    }
+
+                    data[i] = data[i + 1] = data[i + 2] = gray;
                 }
                 ctx.putImageData(imageData, 0, 0);
             } else {
