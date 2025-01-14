@@ -105,6 +105,7 @@
     Gray Scale Mode:
     <select id="grayscaleOptions" onchange="drawMeme()">
         <option value="average">Average</option>
+        <option value="inverse">Inverse</option>
         <option value="luminosity">Luminosity</option>
         <option value="desaturation">Desaturation</option>
         <option value="redChannel">Red Channel</option>
@@ -237,6 +238,9 @@
                     switch (option) {
                         case 'average':
                             gray = (r + g + b) / 3;
+                            break;
+                        case 'inverse':
+                            gray = 256 - (r + g + b) / 3;
                             break;
                         case 'luminosity':
                             gray = 0.21 * r + 0.72 * g + 0.07 * b;
