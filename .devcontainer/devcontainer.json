@@ -3,5 +3,13 @@
   "features": {
     "ghcr.io/devcontainers-extra/features/ts-node:1": {}
   },
-  "postCreateCommand": "cd src && npm install"
+  "postCreateCommand": "cd src && npm install",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "GitHub.copilot-chat",
+        "streetsidesoftware.code-spell-checker"
+      ]
+    }
+  }
 }
