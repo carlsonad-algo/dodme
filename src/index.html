@@ -132,370 +132,426 @@
     <button class="button" onclick="addTextBlock({...defaultEye});">Add Glow Eye</button>
     <div id="textBlocksContainer"></div>
     <script>
-        const imageUpload = document.getElementById('imageUpload');
-        const memeCanvas = document.getElementById('memeCanvas');
-        const textBlocksContainer = document.getElementById('textBlocksContainer');
-        const ctx = memeCanvas.getContext('2d', { willReadFrequently: true });
-        
-        const defaultEye = {
-            text: '■',
-            x: memeCanvas.width / (2),
-            y: memeCanvas.height / (2),
-            fontSize: 40,
-            fontFamily: 'Courier New',
-            foregroundColor: '#00ff00',
-            glowRadius: 50,
-            glowIntensity: 4,
-            glowColor: '#00ff00',
-            rotation: 0,
-            isDragging: false,
-            locked: false
-        };
+        document.addEventListener('DOMContentLoaded', function() {
 
-        const defaultMemeText = {
-            ...defaultEye,
-            text: 'TEXT',
-            fontSize: 35,
-            fontFamily: 'Impact',
-            glowRadius: 20,
-            glowColor: '#000000',
-            glowIntensity: 2,
-        };
+            const imageUpload = document.getElementById('imageUpload');
+            const memeCanvas = document.getElementById('memeCanvas');
+            const textBlocksContainer = document.getElementById('textBlocksContainer');
+            const ctx = memeCanvas.getContext('2d', { willReadFrequently: true });
+            
+            // Existing mouse event handlers
+            memeCanvas.addEventListener('mousedown', handleMouseDown);
+            memeCanvas.addEventListener('mousemove', handleMouseMove);
+            memeCanvas.addEventListener('mouseup', handleMouseUp);
 
-        let uploadedImage;
-        let textBlocks = [];
-        const devicePixelRatio = window.devicePixelRatio || 1;
-        let selectedTextBlock = null;
-        let offsetX, offsetY;
+            // New touch event handlers
+            memeCanvas.addEventListener('touchstart', handleTouchStart);
+            memeCanvas.addEventListener('touchmove', handleTouchMove);
+            memeCanvas.addEventListener('touchend', handleTouchEnd);
 
-        imageUpload.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    setImage(e.target.result);
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-
-        function setImage(imageSrc) {
-            uploadedImage = new Image();
-            uploadedImage.onload = () => {
-                // Adjust canvas for device pixel ratio
-                memeCanvas.width = uploadedImage.width * devicePixelRatio;
-                memeCanvas.height = uploadedImage.height * devicePixelRatio;
-                memeCanvas.style.width = `${uploadedImage.width}px`;
-                memeCanvas.style.height = `${uploadedImage.height}px`;
-                ctx.scale(devicePixelRatio, devicePixelRatio);
-                
-                drawMeme();
+            const defaultEye = {
+                text: '■',
+                x: memeCanvas.width / (2),
+                y: memeCanvas.height / (2),
+                fontSize: 40,
+                fontFamily: 'Courier New',
+                foregroundColor: '#00ff00',
+                glowRadius: 50,
+                glowIntensity: 4,
+                glowColor: '#00ff00',
+                rotation: 0,
+                isDragging: false,
+                locked: false
             };
-            uploadedImage.crossOrigin = "Anonymous";
-            uploadedImage.src = imageSrc;
-        }
 
-        function drawMeme() {
-            ctx.clearRect(0, 0, memeCanvas.width, memeCanvas.height);
-            addImageWithGrayScale();
+            const defaultMemeText = {
+                ...defaultEye,
+                text: 'TEXT',
+                fontSize: 35,
+                fontFamily: 'Impact',
+                glowRadius: 20,
+                glowColor: '#000000',
+                glowIntensity: 2,
+            };
 
-            [...textBlocks].reverse().forEach((block) => {
-                ctx.save();
-                try{
-                    ctx.translate(block.x, block.y);
-                    ctx.rotate(block.rotation * Math.PI / 180);
-                    ctx.font = `${block.fontSize}px "${block.fontFamily}"`;
-                    ctx.shadowBlur = block.glowRadius;
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillStyle = block.foregroundColor;
-                    ctx.shadowColor = block.glowColor;
-                    ctx.glowColor = block.glowColor;
-                    ctx.strokeStyle = block.glowColor;
+            let uploadedImage;
+            let textBlocks = [];
+            const devicePixelRatio = window.devicePixelRatio || 1;
+            let selectedTextBlock = null;
+            let offsetX, offsetY;
+
+            imageUpload.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        setImage(e.target.result);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            function setImage(imageSrc) {
+                uploadedImage = new Image();
+                uploadedImage.onload = () => {
+                    // Adjust canvas for device pixel ratio
+                    memeCanvas.width = uploadedImage.width * devicePixelRatio;
+                    memeCanvas.height = uploadedImage.height * devicePixelRatio;
+                    memeCanvas.style.width = `${uploadedImage.width}px`;
+                    memeCanvas.style.height = `${uploadedImage.height}px`;
+                    ctx.scale(devicePixelRatio, devicePixelRatio);
                     
-                    //I don't see another way to increase the glow intensity besides drawing the text multiple times
-                    for( let i = 0; i < block.glowIntensity; i++) {
-                        ctx.fillText(block.text, 0, 0);
-                    }
+                    drawMeme();
+                };
+                uploadedImage.crossOrigin = "Anonymous";
+                uploadedImage.src = imageSrc;
+            }
 
-                    ctx.shadowBlur = 1;
-                    ctx.strokeText(block.text, 0, 0);
-                }
-                finally  {
-                    ctx.restore();
-                }
-            });
-        }
-
-        function addImageWithGrayScale() {
-            if (uploadedImage) {
-                ctx.drawImage(uploadedImage, 0, 0);
-               
-                const option = document.getElementById('grayscaleOptions').value;
-                // Convert image to grayscale
-                const imageData = ctx.getImageData(0, 0, memeCanvas.width, memeCanvas.height);
-                const data = imageData.data;
-                for (let i = 0; i < data.length; i += 4) {
-                    let gray;
-                    const r = data[i];
-                    const g = data[i + 1];
-                    const b = data[i + 2];
-
-                    switch (option) {
-                        case 'average':
-                            gray = (r + g + b) / 3;
-                            break;
-                        case 'inverse':
-                            gray = 256 - (r + g + b) / 3;
-                            break;
-                        case 'luminosity':
-                            gray = 0.21 * r + 0.72 * g + 0.07 * b;
-                            break;
-                        case 'desaturation':
-                            gray = (Math.max(r, g, b) + Math.min(r, g, b)) / 2;
-                            break;
-                        case 'redChannel':
-                            gray = r;
-                            break;
-                        case 'greenChannel':
-                            gray = g;
-                            break;
-                        case 'blueChannel':
-                            gray = b;
-                            break;
-                        case 'decompositionMax':
-                            gray = Math.max(r, g, b);
-                            break;
-                        case 'decompositionMin':
-                            gray = Math.min(r, g, b);
-                            break;
-                        case 'greenScale':
-                            data[i] = 0; // Red channel
-                            data[i + 1] = g; // Green channel
-                            data[i + 2] = 0; // Blue channel
-                            continue;
-                        case 'greenScaleLight':
-                            data[i] = g / 1.25; // Red channel
-                            data[i + 1] = g; // Green channel
-                            data[i + 2] = g / 1.25; // Blue channel
-                            continue;
-                        default:
-                            return; // No filter
-                    }
-
-                    data[i] = data[i + 1] = data[i + 2] = gray;
-                }
-                ctx.putImageData(imageData, 0, 0);
-            } else {
+            function drawMeme() {
                 ctx.clearRect(0, 0, memeCanvas.width, memeCanvas.height);
-            }
-        }
+                addImageWithGrayScale();
 
-        function renderTextBlockControls() {
-            textBlocksContainer.innerHTML = '';
-            textBlocks.forEach((block, index) => {
-                const blockControl = document.createElement('div');
-                blockControl.innerHTML = `
-                    <div id="block_${index}" class="block">
-                        <button class="button move" onclick="moveTextBlockUp(${index})">▲</button>
-                        <button class="button move" onclick="moveTextBlockDown(${index})">▼</button>
-                        <label>Text:</label>
-                        <input type="text" id="text${index}" value="${block.text}" oninput="updateText(${index}, this.value)">
-                        <button class="addCharacterButton" onclick="addCharacter(${index}, '■')">■</button>
-                        <button class="addCharacterButton" onclick="addCharacter(${index}, '●')">●</button>
-                        <label>Font Size:</label>
-                        <input type="number" value="${block.fontSize}" min="10" max="200" step="5" onchange="updateFontSize(${index}, this.value)">
-                        <label>Font Family:</label>
-                        <select onchange="updateFontFamily(${index}, this.value)">
-                            <option value="Arial" ${block.fontFamily === 'Arial' ? 'selected' : ''}>Arial</option>
-                            <option value="Verdana" ${block.fontFamily === 'Verdana' ? 'selected' : ''}>Verdana</option>
-                            <option value="Tahoma" ${block.fontFamily === 'Tahoma' ? 'selected' : ''}>Tahoma</option>
-                            <option value="Georgia" ${block.fontFamily === 'Georgia' ? 'selected' : ''}>Georgia</option>
-                            <option value="Impact" ${block.fontFamily === 'Impact' ? 'selected' : ''}>Impact</option>
-                            <option value="Press Start 2P" ${block.fontFamily === 'Press Start 2P' ? 'selected' : ''}>Press Start 2P</option>
-                            <option value="Courier New" ${block.fontFamily === 'Courier New' ? 'selected' : ''}>Courier New</option>
-                            <option value="Comic Sans MS" ${block.fontFamily === 'Comic Sans MS' ? 'selected' : ''}>Comic Sans MS</option>
-                            <option value="Montserrat" ${block.fontFamily === 'Montserrat' ? 'selected' : ''}>Montserrat</option>
-                            <option value="Myriad Pro" ${block.fontFamily === 'Myriad Pro' ? 'selected' : ''}>Myriad Pro</option>
-                            <option value="Helvetica" ${block.fontFamily === 'Helvetica' ? 'selected' : ''}>Helvetica</option>
-                        </select>
-                        <label>Glow Radius:</label>
-                        <input type="number" value="${block.glowRadius}" min="1" max="200" step="5" onchange="updateGlowRadius(${index}, this.value)">
-                        <label>Glow Intensity:</label>
-                        <input type="number" value="${block.glowIntensity}" min="1" max="20" step="1" onchange="updateGlowIntensity(${index}, this.value)">
-                        <label>Rotation:</label>
-                        <input type="number" value="${block.rotation}" min="-180" max="180" step="5" onchange="updateRotation(${index}, this.value)">
-                        <label>Font Color:</label>
-                        <input type="color" value="${block.foregroundColor}" onchange="updateForegroundColor(${index}, this.value)">
-                        <label>Glow Color:</label>
-                        <input type="color" value="${block.glowColor}" onchange="updateGlowColor(${index}, this.value)">
-                        <button class="button locked" onclick="toggleLocked(${index})">${block.locked ? "&#128274":"&#128275"}</button>
-                        <button class="button delete" onclick="deleteTextBlock(${index})">🗑</button>
+                [...textBlocks].reverse().forEach((block) => {
+                    ctx.save();
+                    try{
+                        ctx.translate(block.x, block.y);
+                        ctx.rotate(block.rotation * Math.PI / 180);
+                        ctx.font = `${block.fontSize}px "${block.fontFamily}"`;
+                        ctx.shadowBlur = block.glowRadius;
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillStyle = block.foregroundColor;
+                        ctx.shadowColor = block.glowColor;
+                        ctx.glowColor = block.glowColor;
+                        ctx.strokeStyle = block.glowColor;
                         
-                    </div>
-                `;
-                textBlocksContainer.appendChild(blockControl);
-            });
-        }
+                        //I don't see another way to increase the glow intensity besides drawing the text multiple times
+                        for( let i = 0; i < block.glowIntensity; i++) {
+                            ctx.fillText(block.text, 0, 0);
+                        }
 
-        function updateText(index, value) {
-            textBlocks[index].text = value;
-            drawMeme();
-        }
-        
-        function addCharacter(index, character) {
-            var textBox = document.getElementById('text'+index);
-            const [start, end] = [textBox.selectionStart, textBox.selectionEnd];
-            textBox.setRangeText(character, start, end, 'end');
-            textBox.focus();
-            textBox.oninput(index, textBox.value);
-        }
-
-        function updateFontSize(index, value) {
-            textBlocks[index].fontSize = value;
-            drawMeme();
-        }
-
-        function updateFontFamily(index, value) {
-            textBlocks[index].fontFamily = value;
-            drawMeme();
-        }
-
-        function updateGlowRadius(index, value) {
-            textBlocks[index].glowRadius = value;
-            drawMeme();
-        }
-
-        function updateGlowIntensity(index, value) {
-            textBlocks[index].glowIntensity = value;
-            drawMeme();
-        }
-
-        function updateRotation(index, value) {
-            textBlocks[index].rotation = value;
-            drawMeme();
-        }
-
-        function updateForegroundColor(index, value) {
-            textBlocks[index].foregroundColor = value;
-            drawMeme();
-        }
-
-        function updateGlowColor(index, value) {
-            textBlocks[index].glowColor = value;
-            drawMeme();
-        }
-
-        function deleteTextBlock(index) {
-            textBlocks.splice(index, 1);
-            renderTextBlockControls();
-            drawMeme();
-        }
-
-        function toggleLocked(index) {
-            textBlocks[index].locked = !textBlocks[index].locked;
-            renderTextBlockControls();
-        }
-
-        function addTextBlock(data) {
-            textBlocks.push(data);
-            renderTextBlockControls();
-            drawMeme();
-        }
-
-        function moveTextBlockUp(index) {
-            if (index > 0) {
-                [textBlocks[index - 1], textBlocks[index]] = [textBlocks[index], textBlocks[index - 1]];
-                renderTextBlockControls();
-                drawMeme();
-            }
-        }
-
-        function moveTextBlockDown(index) {
-            if (index < textBlocks.length - 1) {
-                [textBlocks[index + 1], textBlocks[index]] = [textBlocks[index], textBlocks[index + 1]];
-                renderTextBlockControls();
-                drawMeme();
-            }
-        }
-
-        function getMousePos(canvas, evt) {
-            const rect = canvas.getBoundingClientRect();
-            return {
-                x: evt.clientX - rect.left,
-                y: evt.clientY - rect.top
-            };
-        }
-
-        function getBlockWidth(block) {
-            ctx.save();
-            try {
-                ctx.font = `${block.fontSize}px "${block.fontFamily}"`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                return ctx.measureText(block.text).width;
-            }
-            finally {
-                ctx.restore();
-            }
-        }
-
-        function isPointInRotatedRect(x, y, rectX, rectY, width, height, rotation) {
-            const rad = rotation * Math.PI / 180;
-            const cos = Math.cos(rad);
-            const sin = Math.sin(rad);
-
-            const dx = x - rectX;
-            const dy = y - rectY;
-
-            const hdx = cos * dx + sin * dy;
-            const hdy = cos * dy - sin * dx;
-
-            return hdx >= -width / 2 && hdx <= width / 2 && hdy >= -height / 2 && hdy <= height / 2;
-        }
-
-        memeCanvas.addEventListener('mousedown', (e) => {
-            const mousePos = getMousePos(memeCanvas, e);
-            selectedTextBlock = textBlocks.find(block => {
-                if (block.locked) return false;
-                const textWidth = getBlockWidth(block);
-                const textHeight = block.fontSize;
-                return isPointInRotatedRect(mousePos.x, mousePos.y, block.x, block.y, textWidth, textHeight, block.rotation);
-            });
-            if (selectedTextBlock) {
-                offsetX = mousePos.x - selectedTextBlock.x;
-                offsetY = mousePos.y - selectedTextBlock.y;
-                textBlocks.forEach((block, index) => {
-                    var blockElement = document.getElementById('block_'+index);
-                    if (selectedTextBlock == block) {
-                        blockElement.classList.add('selected');
-                    } else {
-                        blockElement.classList.remove('selected');
+                        ctx.shadowBlur = 1;
+                        ctx.strokeText(block.text, 0, 0);
+                    }
+                    finally  {
+                        ctx.restore();
                     }
                 });
             }
-        });
 
-        memeCanvas.addEventListener('mousemove', (e) => {
-            if (selectedTextBlock) {
-                const mousePos = getMousePos(memeCanvas, e);
-                selectedTextBlock.x = mousePos.x - offsetX;
-                selectedTextBlock.y = mousePos.y - offsetY;
+            function addImageWithGrayScale() {
+                if (uploadedImage) {
+                    ctx.drawImage(uploadedImage, 0, 0);
+                
+                    const option = document.getElementById('grayscaleOptions').value;
+                    
+                    if ( option == '' || option === 'none') return;
+
+                    // Convert image to grayscale
+                    const imageData = ctx.getImageData(0, 0, memeCanvas.width, memeCanvas.height);
+                    const data = imageData.data;
+                    for (let i = 0; i < data.length; i += 4) {
+                        let gray;
+                        const r = data[i];
+                        const g = data[i + 1];
+                        const b = data[i + 2];
+
+                        switch (option) {
+                            case 'average':
+                                gray = (r + g + b) / 3;
+                                break;
+                            case 'inverse':
+                                gray = 256 - (r + g + b) / 3;
+                                break;
+                            case 'luminosity':
+                                gray = 0.21 * r + 0.72 * g + 0.07 * b;
+                                break;
+                            case 'desaturation':
+                                gray = (Math.max(r, g, b) + Math.min(r, g, b)) / 2;
+                                break;
+                            case 'redChannel':
+                                gray = r;
+                                break;
+                            case 'greenChannel':
+                                gray = g;
+                                break;
+                            case 'blueChannel':
+                                gray = b;
+                                break;
+                            case 'decompositionMax':
+                                gray = Math.max(r, g, b);
+                                break;
+                            case 'decompositionMin':
+                                gray = Math.min(r, g, b);
+                                break;
+                            case 'greenScale':
+                                data[i] = 0; // Red channel
+                                data[i + 1] = g; // Green channel
+                                data[i + 2] = 0; // Blue channel
+                                continue;
+                            case 'greenScaleLight':
+                                data[i] = g / 1.25; // Red channel
+                                data[i + 1] = g; // Green channel
+                                data[i + 2] = g / 1.25; // Blue channel
+                                continue;
+                            default:
+                                return; // No filter
+                        }
+
+                        data[i] = data[i + 1] = data[i + 2] = gray;
+                    }
+                    ctx.putImageData(imageData, 0, 0);
+                } else {
+                    ctx.clearRect(0, 0, memeCanvas.width, memeCanvas.height);
+                }
+            }
+
+            function renderTextBlockControls() {
+                textBlocksContainer.innerHTML = '';
+                textBlocks.forEach((block, index) => {
+                    const blockControl = document.createElement('div');
+                    blockControl.innerHTML = `
+                        <div id="block_${index}" class="block">
+                            <button class="button move" onclick="moveTextBlockUp(${index})">▲</button>
+                            <button class="button move" onclick="moveTextBlockDown(${index})">▼</button>
+                            <label>Text:</label>
+                            <input type="text" id="text${index}" value="${block.text}" oninput="updateText(${index}, this.value)">
+                            <button class="addCharacterButton" onclick="addCharacter(${index}, '■')">■</button>
+                            <button class="addCharacterButton" onclick="addCharacter(${index}, '●')">●</button>
+                            <label>Font Size:</label>
+                            <input type="number" value="${block.fontSize}" min="10" max="200" step="5" onchange="updateFontSize(${index}, this.value)">
+                            <label>Font Family:</label>
+                            <select onchange="updateFontFamily(${index}, this.value)">
+                                <option value="Arial" ${block.fontFamily === 'Arial' ? 'selected' : ''}>Arial</option>
+                                <option value="Verdana" ${block.fontFamily === 'Verdana' ? 'selected' : ''}>Verdana</option>
+                                <option value="Tahoma" ${block.fontFamily === 'Tahoma' ? 'selected' : ''}>Tahoma</option>
+                                <option value="Georgia" ${block.fontFamily === 'Georgia' ? 'selected' : ''}>Georgia</option>
+                                <option value="Impact" ${block.fontFamily === 'Impact' ? 'selected' : ''}>Impact</option>
+                                <option value="Press Start 2P" ${block.fontFamily === 'Press Start 2P' ? 'selected' : ''}>Press Start 2P</option>
+                                <option value="Courier New" ${block.fontFamily === 'Courier New' ? 'selected' : ''}>Courier New</option>
+                                <option value="Comic Sans MS" ${block.fontFamily === 'Comic Sans MS' ? 'selected' : ''}>Comic Sans MS</option>
+                                <option value="Montserrat" ${block.fontFamily === 'Montserrat' ? 'selected' : ''}>Montserrat</option>
+                                <option value="Myriad Pro" ${block.fontFamily === 'Myriad Pro' ? 'selected' : ''}>Myriad Pro</option>
+                                <option value="Helvetica" ${block.fontFamily === 'Helvetica' ? 'selected' : ''}>Helvetica</option>
+                            </select>
+                            <label>Glow Radius:</label>
+                            <input type="number" value="${block.glowRadius}" min="1" max="200" step="5" onchange="updateGlowRadius(${index}, this.value)">
+                            <label>Glow Intensity:</label>
+                            <input type="number" value="${block.glowIntensity}" min="1" max="20" step="1" onchange="updateGlowIntensity(${index}, this.value)">
+                            <label>Rotation:</label>
+                            <input type="number" value="${block.rotation}" min="-180" max="180" step="5" onchange="updateRotation(${index}, this.value)">
+                            <label>Font Color:</label>
+                            <input type="color" value="${block.foregroundColor}" onchange="updateForegroundColor(${index}, this.value)">
+                            <label>Glow Color:</label>
+                            <input type="color" value="${block.glowColor}" onchange="updateGlowColor(${index}, this.value)">
+                            <button class="button locked" onclick="toggleLocked(${index})">${block.locked ? "&#128274":"&#128275"}</button>
+                            <button class="button delete" onclick="deleteTextBlock(${index})">🗑</button>
+                            
+                        </div>
+                    `;
+                    textBlocksContainer.appendChild(blockControl);
+                });
+            }
+
+            function updateText(index, value) {
+                textBlocks[index].text = value;
                 drawMeme();
             }
+            
+            function addCharacter(index, character) {
+                var textBox = document.getElementById('text'+index);
+                const [start, end] = [textBox.selectionStart, textBox.selectionEnd];
+                textBox.setRangeText(character, start, end, 'end');
+                textBox.focus();
+                textBox.oninput(index, textBox.value);
+            }
+
+            function updateFontSize(index, value) {
+                textBlocks[index].fontSize = value;
+                drawMeme();
+            }
+
+            function updateFontFamily(index, value) {
+                textBlocks[index].fontFamily = value;
+                drawMeme();
+            }
+
+            function updateGlowRadius(index, value) {
+                textBlocks[index].glowRadius = value;
+                drawMeme();
+            }
+
+            function updateGlowIntensity(index, value) {
+                textBlocks[index].glowIntensity = value;
+                drawMeme();
+            }
+
+            function updateRotation(index, value) {
+                textBlocks[index].rotation = value;
+                drawMeme();
+            }
+
+            function updateForegroundColor(index, value) {
+                textBlocks[index].foregroundColor = value;
+                drawMeme();
+            }
+
+            function updateGlowColor(index, value) {
+                textBlocks[index].glowColor = value;
+                drawMeme();
+            }
+
+            function deleteTextBlock(index) {
+                textBlocks.splice(index, 1);
+                renderTextBlockControls();
+                drawMeme();
+            }
+
+            function toggleLocked(index) {
+                textBlocks[index].locked = !textBlocks[index].locked;
+                renderTextBlockControls();
+            }
+
+            function addTextBlock(data) {
+                textBlocks.push(data);
+                renderTextBlockControls();
+                drawMeme();
+            }
+
+            function moveTextBlockUp(index) {
+                if (index > 0) {
+                    [textBlocks[index - 1], textBlocks[index]] = [textBlocks[index], textBlocks[index - 1]];
+                    renderTextBlockControls();
+                    drawMeme();
+                }
+            }
+
+            function moveTextBlockDown(index) {
+                if (index < textBlocks.length - 1) {
+                    [textBlocks[index + 1], textBlocks[index]] = [textBlocks[index], textBlocks[index + 1]];
+                    renderTextBlockControls();
+                    drawMeme();
+                }
+            }
+
+            function getMousePos(canvas, evt) {
+                const rect = canvas.getBoundingClientRect();
+                return {
+                    x: evt.clientX - rect.left,
+                    y: evt.clientY - rect.top
+                };
+            }
+
+            function getBlockWidth(block) {
+                ctx.save();
+                try {
+                    ctx.font = `${block.fontSize}px "${block.fontFamily}"`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    return ctx.measureText(block.text).width;
+                }
+                finally {
+                    ctx.restore();
+                }
+            }
+
+            function isPointInRotatedRect(x, y, rectX, rectY, width, height, rotation) {
+                const rad = rotation * Math.PI / 180;
+                const cos = Math.cos(rad);
+                const sin = Math.sin(rad);
+
+                const dx = x - rectX;
+                const dy = y - rectY;
+
+                const hdx = cos * dx + sin * dy;
+                const hdy = cos * dy - sin * dx;
+
+                return hdx >= -width / 2 && hdx <= width / 2 && hdy >= -height / 2 && hdy <= height / 2;
+            }
+            function handleMouseDown(e) {
+                const mousePos = getMousePos(memeCanvas, e);
+                selectedTextBlock = textBlocks.find(block => {
+                    if (block.locked) return false;
+                    const textWidth = getBlockWidth(block);
+                    const textHeight = block.fontSize;
+                    return isPointInRotatedRect(mousePos.x, mousePos.y, block.x, block.y, textWidth, textHeight, block.rotation);
+                });
+                if (selectedTextBlock) {
+                    offsetX = mousePos.x - selectedTextBlock.x;
+                    offsetY = mousePos.y - selectedTextBlock.y;
+                    textBlocks.forEach((block, index) => {
+                        var blockElement = document.getElementById('block_'+index);
+                        if (selectedTextBlock == block) {
+                            blockElement.classList.add('selected');
+                        } else {
+                            blockElement.classList.remove('selected');
+                        }
+                    });
+                }
+            }
+
+            function handleMouseMove(e) {
+                if (selectedTextBlock) {
+                    const mousePos = getMousePos(memeCanvas, e);
+                    selectedTextBlock.x = mousePos.x - offsetX;
+                    selectedTextBlock.y = mousePos.y - offsetY;
+                    drawMeme();
+                    
+                }
+            }
+
+            function handleMouseUp(e) {
+                selectedTextBlock = null;
+            }
+
+            function handleTouchStart(event) {
+                // Convert touch event to mouse event
+                const touch = event.touches[0];
+                const mouseEvent = new MouseEvent('mousedown', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                
+                handleMouseDown(mouseEvent);
+
+                if (selectedTextBlock) {
+                    event.preventDefault();
+                }
+            }
+
+            function handleTouchMove(event) {
+                if (!selectedTextBlock) return;
+
+                event.preventDefault();
+
+                const touch = event.touches[0];
+
+                const mouseEvent = new MouseEvent('mousemove', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                handleMouseMove(mouseEvent);
+            }
+
+            function handleTouchEnd(event) {
+                if (!selectedTextBlock) return;
+
+                event.preventDefault();
+
+                const mouseEvent = new MouseEvent('mouseup', {});
+                handleMouseUp(mouseEvent);
+            }
+
+            textBlocks.push({...defaultEye, x: 200, y: 200, rotation: -20});
+            textBlocks.push({...defaultEye, x: 310, y: 165, rotation: -20});
+            textBlocks.push({...defaultMemeText, text : "AND THAT'S HOW I ALMOST DIED OF DYSENTERY!!", x: 345, y: 420});
+
+            setImage('silvio.jpg');
+            renderTextBlockControls();
+            drawMeme();
         });
-
-        memeCanvas.addEventListener('mouseup', () => {
-            selectedTextBlock = null;
-        });
-
-        textBlocks.push({...defaultEye, x: 200, y: 200, rotation: -20});
-        textBlocks.push({...defaultEye, x: 310, y: 165, rotation: -20});
-        textBlocks.push({...defaultMemeText, text : "AND THAT'S HOW I ALMOST DIED OF DYSENTERY!!", x: 345, y: 420});
-
-        setImage('silvio.jpg');
-        renderTextBlockControls();
-        drawMeme();
+        
+        
     </script>
 </body>
 </html>
