@@ -135,7 +135,6 @@
     <button class="button" onclick="addTextBlock({...defaultMemeText});">Add Text</button>
     <button class="button" onclick="addTextBlock({...defaultEye});">Add Glow Eye</button>
     <div id="textBlocksContainer"></div>
-    <button id="downloadButton">Download Image</button>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -156,6 +155,8 @@
             memeCanvas.addEventListener('touchstart', handleTouchStart);
             memeCanvas.addEventListener('touchmove', handleTouchMove);
             memeCanvas.addEventListener('touchend', handleTouchEnd);
+
+            copyButton.addEventListener('click', copyCanvasContentsToClipboard);
 
             const defaultEye = {
                 text: '■',
@@ -572,8 +573,6 @@
                 });
             }
 
-            copyButton.addEventListener('click', copyCanvasContentsToClipboard);
-
             async function copyCanvasContentsToClipboard() {
                 if (ClipboardItem.supports("image/png")) {
                     // Copy canvas to blob
@@ -600,8 +599,6 @@
             renderTextBlockControls();
             drawMeme();
         });
-        
-        
     </script>
 </body>
 </html>
