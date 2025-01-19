@@ -124,19 +124,27 @@
         <option value="none">None</option>
     </select>
 
-    <h3>Click and drag with mouse to move blocks</h3>
+    <h3>Click and drag with mouse our touch to move blocks</h3>
+
+    <button id="downloadButton">Download Image</button>
+    <button id="copyButton">Copy to Clipboard</button>
+
     <div>
         <canvas id="memeCanvas"></canvas>
     </div>
     <button class="button" onclick="addTextBlock({...defaultMemeText});">Add Text</button>
     <button class="button" onclick="addTextBlock({...defaultEye});">Add Glow Eye</button>
     <div id="textBlocksContainer"></div>
+    <button id="downloadButton">Download Image</button>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
 
             const imageUpload = document.getElementById('imageUpload');
             const memeCanvas = document.getElementById('memeCanvas');
             const textBlocksContainer = document.getElementById('textBlocksContainer');
+            const downloadButton = document.getElementById('downloadButton');
+            const copyButton = document.getElementById('copyButton');
             const ctx = memeCanvas.getContext('2d', { willReadFrequently: true });
             
             // Existing mouse event handlers
@@ -353,12 +361,12 @@
                 });
             }
 
-            function updateText(index, value) {
+            window.updateText = function(index, value) {
                 textBlocks[index].text = value;
                 drawMeme();
             }
             
-            function addCharacter(index, character) {
+            window.addCharacter = function(index, character) {
                 var textBox = document.getElementById('text'+index);
                 const [start, end] = [textBox.selectionStart, textBox.selectionEnd];
                 textBox.setRangeText(character, start, end, 'end');
@@ -366,59 +374,59 @@
                 textBox.oninput(index, textBox.value);
             }
 
-            function updateFontSize(index, value) {
+            window.updateFontSize = function(index, value) {
                 textBlocks[index].fontSize = value;
                 drawMeme();
             }
 
-            function updateFontFamily(index, value) {
+            window.updateFontFamily = function(index, value) {
                 textBlocks[index].fontFamily = value;
                 drawMeme();
             }
 
-            function updateGlowRadius(index, value) {
+            window.updateGlowRadius = function(index, value) {
                 textBlocks[index].glowRadius = value;
                 drawMeme();
             }
 
-            function updateGlowIntensity(index, value) {
+            window.updateGlowIntensity = function(index, value) {
                 textBlocks[index].glowIntensity = value;
                 drawMeme();
             }
 
-            function updateRotation(index, value) {
+            window.updateRotation = function(index, value) {
                 textBlocks[index].rotation = value;
                 drawMeme();
             }
 
-            function updateForegroundColor(index, value) {
+            window.updateForegroundColor = function(index, value) {
                 textBlocks[index].foregroundColor = value;
                 drawMeme();
             }
 
-            function updateGlowColor(index, value) {
+            window.updateGlowColor = function(index, value) {
                 textBlocks[index].glowColor = value;
                 drawMeme();
             }
 
-            function deleteTextBlock(index) {
+            window.deleteTextBlock = function(index) {
                 textBlocks.splice(index, 1);
                 renderTextBlockControls();
                 drawMeme();
             }
 
-            function toggleLocked(index) {
+            window.toggleLocked = function(index) {
                 textBlocks[index].locked = !textBlocks[index].locked;
                 renderTextBlockControls();
             }
 
-            function addTextBlock(data) {
+            window.addTextBlock = function(data) {
                 textBlocks.push(data);
                 renderTextBlockControls();
                 drawMeme();
             }
 
-            function moveTextBlockUp(index) {
+            window.moveTextBlockUp = function(index) {
                 if (index > 0) {
                     [textBlocks[index - 1], textBlocks[index]] = [textBlocks[index], textBlocks[index - 1]];
                     renderTextBlockControls();
@@ -426,7 +434,7 @@
                 }
             }
 
-            function moveTextBlockDown(index) {
+            window.moveTextBlockDown = function(index) {
                 if (index < textBlocks.length - 1) {
                     [textBlocks[index + 1], textBlocks[index]] = [textBlocks[index], textBlocks[index + 1]];
                     renderTextBlockControls();
@@ -468,6 +476,7 @@
 
                 return hdx >= -width / 2 && hdx <= width / 2 && hdy >= -height / 2 && hdy <= height / 2;
             }
+
             function handleMouseDown(e) {
                 const mousePos = getMousePos(memeCanvas, e);
                 selectedTextBlock = textBlocks.find(block => {
@@ -511,7 +520,7 @@
                     clientX: touch.clientX,
                     clientY: touch.clientY
                 });
-                
+
                 handleMouseDown(mouseEvent);
 
                 if (selectedTextBlock) {
@@ -540,6 +549,47 @@
 
                 const mouseEvent = new MouseEvent('mouseup', {});
                 handleMouseUp(mouseEvent);
+            }
+
+            downloadButton.addEventListener('click', function() {
+                const image = memeCanvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.href = image;
+                link.download = 'meme.png';
+                link.click();
+            });
+
+            // Async/await method replacing toBlob() callback
+            async function getBlobFromCanvas() {
+                return new Promise((resolve, reject) => {
+                    memeCanvas.toBlob((blob) => {
+                        if (blob) {
+                            resolve(blob);
+                        } else {
+                            reject(new Error("memeCanvas toBlob failed"));
+                        }
+                    });
+                });
+            }
+
+            copyButton.addEventListener('click', copyCanvasContentsToClipboard);
+
+            async function copyCanvasContentsToClipboard() {
+                if (ClipboardItem.supports("image/png")) {
+                    // Copy canvas to blob
+                    try {
+                    const blob = await getBlobFromCanvas();
+                    // Create ClipboardItem with blob and it's type, and add to an array
+                    const data = [new ClipboardItem({ [blob.type]: blob })];
+                    // Write the data to the clipboard
+                    await navigator.clipboard.write(data);
+                        alert("Copied");
+                    } catch (error) {
+                        alert(error);
+                    }
+                } else {
+                    log("image/png is not supported");
+                }
             }
 
             textBlocks.push({...defaultEye, x: 200, y: 200, rotation: -20});
