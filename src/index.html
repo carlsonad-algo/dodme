@@ -109,7 +109,7 @@
     <input type="file" id="imageUpload" accept="image/*">
 
     Gray Scale Mode:
-    <select id="grayscaleOptions" onchange="drawMeme()">
+    <select id="grayscaleOptions">
         <option value="average">Average</option>
         <option value="inverse">Inverse</option>
         <option value="luminosity">Luminosity</option>
@@ -144,6 +144,7 @@
             const textBlocksContainer = document.getElementById('textBlocksContainer');
             const downloadButton = document.getElementById('downloadButton');
             const copyButton = document.getElementById('copyButton');
+            const grayscaleOptions = document.getElementById('grayscaleOptions');
             const ctx = memeCanvas.getContext('2d', { willReadFrequently: true });
             
             // Existing mouse event handlers
@@ -157,6 +158,10 @@
             memeCanvas.addEventListener('touchend', handleTouchEnd);
 
             copyButton.addEventListener('click', copyCanvasContentsToClipboard);
+
+            grayscaleOptions.addEventListener('change', () => {
+                drawMeme();
+            });
 
             const defaultEye = {
                 text: '■',
