@@ -27,6 +27,8 @@
         canvas {
             margin-top: 20px;
             border: 1px solid #ccc;
+            max-width: 800px;
+            width: 100%;
         }
         .control {
             margin: 5px;
@@ -102,6 +104,7 @@
             border-color: green; 
         }
 
+
     </style>
 </head>
 <body>
@@ -123,17 +126,15 @@
         <option value="greenScaleLight">Green Scale Light</option>
         <option value="none">None</option>
     </select>
-
     <h3>Click and drag with mouse our touch to move blocks</h3>
-
-    <button id="downloadButton">Download Image</button>
-    <button id="copyButton">Copy to Clipboard</button>
-
+    <button class="button" id="downloadButton">Download Image</button>
+    <button class="button" id="copyButton">Copy to Clipboard</button>
+    <button class="button" onclick="addTextBlock();">Add Text</button>
+    <button class="button" onclick="addGlowEye();">Add Glow Eye</button>
     <div>
         <canvas id="memeCanvas"></canvas>
     </div>
-    <button class="button" onclick="addTextBlock({...defaultMemeText});">Add Text</button>
-    <button class="button" onclick="addTextBlock({...defaultEye});">Add Glow Eye</button>
+
     <div id="textBlocksContainer"></div>
 
     <script>
@@ -190,7 +191,6 @@
 
             let uploadedImage;
             let textBlocks = [];
-            const devicePixelRatio = window.devicePixelRatio || 1;
             let selectedTextBlock = null;
             let offsetX, offsetY;
 
@@ -208,13 +208,8 @@
             function setImage(imageSrc) {
                 uploadedImage = new Image();
                 uploadedImage.onload = () => {
-                    // Adjust canvas for device pixel ratio
-                    memeCanvas.width = uploadedImage.width * devicePixelRatio;
-                    memeCanvas.height = uploadedImage.height * devicePixelRatio;
-                    memeCanvas.style.width = `${uploadedImage.width}px`;
-                    memeCanvas.style.height = `${uploadedImage.height}px`;
-                    ctx.scale(devicePixelRatio, devicePixelRatio);
-                    
+                    memeCanvas.width = uploadedImage.width;
+                    memeCanvas.height = uploadedImage.height;
                     drawMeme();
                 };
                 uploadedImage.crossOrigin = "Anonymous";
@@ -426,8 +421,14 @@
                 renderTextBlockControls();
             }
 
+            window.addGlowEye = function() {
+                textBlocks.push({...defaultEye});
+                renderTextBlockControls();
+                drawMeme();
+            }
+
             window.addTextBlock = function(data) {
-                textBlocks.push(data);
+                textBlocks.push({...defaultMemeText});
                 renderTextBlockControls();
                 drawMeme();
             }
@@ -450,9 +451,11 @@
 
             function getMousePos(canvas, evt) {
                 const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
                 return {
-                    x: evt.clientX - rect.left,
-                    y: evt.clientY - rect.top
+                    x: (evt.clientX - rect.left) * scaleX,
+                    y: (evt.clientY - rect.top) * scaleY
                 };
             }
 
@@ -463,8 +466,7 @@
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     return ctx.measureText(block.text).width;
-                }
-                finally {
+                } finally {
                     ctx.restore();
                 }
             }
@@ -482,7 +484,7 @@
 
                 return hdx >= -width / 2 && hdx <= width / 2 && hdy >= -height / 2 && hdy <= height / 2;
             }
-
+          
             function handleMouseDown(e) {
                 const mousePos = getMousePos(memeCanvas, e);
                 selectedTextBlock = textBlocks.find(block => {
