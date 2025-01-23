@@ -10,11 +10,6 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
     
-        /* html, button, input, select {
-            font-family: "Press Start 2P", serif;
-            font-weight: 400;
-            font-style: normal;
-        } */
         body {
             text-align: center;
             margin: 20px;
@@ -147,7 +142,8 @@
             const copyButton = document.getElementById('copyButton');
             const grayscaleOptions = document.getElementById('grayscaleOptions');
             const ctx = memeCanvas.getContext('2d', { willReadFrequently: true });
-            
+            let needsRendering = false;
+
             // Existing mouse event handlers
             memeCanvas.addEventListener('mousedown', handleMouseDown);
             memeCanvas.addEventListener('mousemove', handleMouseMove);
@@ -247,6 +243,13 @@
                     }
                 });
             }
+
+            setInterval(() => {
+                if (needsRendering) {
+                    drawMeme();
+                    needsRendering = false;
+                }
+            }, 50);
 
             function addImageWithGrayScale() {
                 if (uploadedImage) {
@@ -512,8 +515,7 @@
                     const mousePos = getMousePos(memeCanvas, e);
                     selectedTextBlock.x = mousePos.x - offsetX;
                     selectedTextBlock.y = mousePos.y - offsetY;
-                    drawMeme();
-                    
+                    needsRendering = true;
                 }
             }
 
