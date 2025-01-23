@@ -142,6 +142,9 @@
             const copyButton = document.getElementById('copyButton');
             const grayscaleOptions = document.getElementById('grayscaleOptions');
             const ctx = memeCanvas.getContext('2d', { willReadFrequently: true });
+            let offscreenCanvas = document.createElement('canvas');
+            let offscreenCtx = offscreenCanvas.getContext('2d');
+            
             let needsRendering = false;
             let oldImageWidth = 0; // Default initial width
             let oldImageHeight = 0; // Default initial height
@@ -159,6 +162,7 @@
             copyButton.addEventListener('click', copyCanvasContentsToClipboard);
 
             grayscaleOptions.addEventListener('change', () => {
+                cacheImageWithGrayScale(offscreenCtx);
                 drawMeme();
             });
 
@@ -236,6 +240,9 @@
 
                     memeCanvas.width = newImageWidth;
                     memeCanvas.height = newImageHeight;
+                    offscreenCanvas.width = newImageWidth;
+                    offscreenCanvas.height = newImageHeight;
+                    cacheImageWithGrayScale(offscreenCtx);
                     drawMeme();
                 };
                 uploadedImage.crossOrigin = "Anonymous";
@@ -243,8 +250,7 @@
             }
 
             function drawMeme() {
-                ctx.clearRect(0, 0, memeCanvas.width, memeCanvas.height);
-                addImageWithGrayScale();
+                ctx.drawImage(offscreenCanvas, 0, 0);
 
                 [...textBlocks].reverse().forEach((block) => {
                     ctx.save();
@@ -276,12 +282,12 @@
 
             setInterval(() => {
                 if (needsRendering) {
-                    drawMeme();
+                    requestAnimationFrame(drawMeme());
                     needsRendering = false;
                 }
             }, 50);
 
-            function addImageWithGrayScale() {
+            function cacheImageWithGrayScale(ctx) {
                 if (uploadedImage) {
                     ctx.drawImage(uploadedImage, 0, 0);
                 
