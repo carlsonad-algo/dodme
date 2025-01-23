@@ -142,9 +142,7 @@
             const copyButton = document.getElementById('copyButton');
             const grayscaleOptions = document.getElementById('grayscaleOptions');
             const ctx = memeCanvas.getContext('2d', { willReadFrequently: true });
-            let offscreenCanvas = document.createElement('canvas');
-            let offscreenCtx = offscreenCanvas.getContext('2d');
-            
+            let cachedImageData = null;
             let needsRendering = false;
             let oldImageWidth = 0; // Default initial width
             let oldImageHeight = 0; // Default initial height
@@ -162,7 +160,7 @@
             copyButton.addEventListener('click', copyCanvasContentsToClipboard);
 
             grayscaleOptions.addEventListener('change', () => {
-                cacheImageWithGrayScale(offscreenCtx);
+                cacheImageWithGrayScale();
                 drawMeme();
             });
 
@@ -240,9 +238,7 @@
 
                     memeCanvas.width = newImageWidth;
                     memeCanvas.height = newImageHeight;
-                    offscreenCanvas.width = newImageWidth;
-                    offscreenCanvas.height = newImageHeight;
-                    cacheImageWithGrayScale(offscreenCtx);
+                    cacheImageWithGrayScale();
                     drawMeme();
                 };
                 uploadedImage.crossOrigin = "Anonymous";
@@ -250,7 +246,7 @@
             }
 
             function drawMeme() {
-                ctx.drawImage(offscreenCanvas, 0, 0);
+                ctx.putImageData(cachedImageData, 0, 0);
 
                 [...textBlocks].reverse().forEach((block) => {
                     ctx.save();
@@ -282,22 +278,25 @@
 
             setInterval(() => {
                 if (needsRendering) {
-                    requestAnimationFrame(drawMeme());
+                    drawMeme();
                     needsRendering = false;
                 }
             }, 50);
 
-            function cacheImageWithGrayScale(ctx) {
+            function cacheImageWithGrayScale() {
                 if (uploadedImage) {
                     ctx.drawImage(uploadedImage, 0, 0);
                 
-                    const option = document.getElementById('grayscaleOptions').value;
-                    
-                    if ( option == '' || option === 'none') return;
-
-                    // Convert image to grayscale
+                    const option = grayscaleOptions.value;
                     const imageData = ctx.getImageData(0, 0, memeCanvas.width, memeCanvas.height);
                     const data = imageData.data;
+
+                    if ( option == '' || option === 'none') 
+                    {
+                        cachedImageData = imageData;
+                        return;
+                    }
+
                     for (let i = 0; i < data.length; i += 4) {
                         let gray;
                         const r = data[i];
@@ -348,7 +347,8 @@
 
                         data[i] = data[i + 1] = data[i + 2] = gray;
                     }
-                    ctx.putImageData(imageData, 0, 0);
+                    cachedImageData = imageData;
+                    //ctx.putImageData(imageData, 0, 0);
                 } else {
                     ctx.clearRect(0, 0, memeCanvas.width, memeCanvas.height);
                 }
@@ -638,10 +638,8 @@
             textBlocks.push({...defaultEye, x: 200, y: 200, rotation: -20});
             textBlocks.push({...defaultEye, x: 310, y: 165, rotation: -20});
             textBlocks.push({...defaultMemeText, text : "AND THAT'S HOW I ALMOST DIED OF DYSENTERY!!", x: 345, y: 420});
-
-            setImage('silvio.jpg');
             renderTextBlockControls();
-            drawMeme();
+            setImage('silvio.jpg');
         });
     </script>
 </body>
