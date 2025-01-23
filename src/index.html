@@ -143,6 +143,8 @@
             const grayscaleOptions = document.getElementById('grayscaleOptions');
             const ctx = memeCanvas.getContext('2d', { willReadFrequently: true });
             let needsRendering = false;
+            let oldImageWidth = 0; // Default initial width
+            let oldImageHeight = 0; // Default initial height
 
             // Existing mouse event handlers
             memeCanvas.addEventListener('mousedown', handleMouseDown);
@@ -201,11 +203,39 @@
                 }
             });
 
+            function adjustTextBlocks(newImageWidth, newImageHeight) {
+                if ( oldImageWidth == 0 || oldImageHeight == 0) {
+                    oldImageWidth = newImageWidth;
+                    oldImageHeight = newImageHeight;
+                    return;
+                }
+
+                const widthScale = newImageWidth / oldImageWidth;
+                const heightScale = newImageHeight / oldImageHeight;
+
+                [defaultEye, defaultMemeText, ...textBlocks].forEach(block => {
+                    block.x = Math.round(block.x * widthScale);
+                    block.y = Math.round(block.y * heightScale);
+                    block.fontSize = Math.round(block.fontSize * Math.min(widthScale, heightScale));
+                    block.glowRadius = Math.round(block.glowRadius * Math.min(widthScale, heightScale));
+                });
+
+                oldImageWidth = newImageWidth;
+                oldImageHeight = newImageHeight;
+
+                renderTextBlockControls();
+            }
+
             function setImage(imageSrc) {
                 uploadedImage = new Image();
                 uploadedImage.onload = () => {
-                    memeCanvas.width = uploadedImage.width;
-                    memeCanvas.height = uploadedImage.height;
+                    const newImageWidth = uploadedImage.width;
+                    const newImageHeight = uploadedImage.height;
+
+                    adjustTextBlocks(newImageWidth, newImageHeight);
+
+                    memeCanvas.width = newImageWidth;
+                    memeCanvas.height = newImageHeight;
                     drawMeme();
                 };
                 uploadedImage.crossOrigin = "Anonymous";
@@ -331,7 +361,7 @@
                             <button class="addCharacterButton" onclick="addCharacter(${index}, '■')">■</button>
                             <button class="addCharacterButton" onclick="addCharacter(${index}, '●')">●</button>
                             <label>Font Size:</label>
-                            <input type="number" value="${block.fontSize}" min="10" max="200" step="5" onchange="updateFontSize(${index}, this.value)">
+                            <input type="number" value="${block.fontSize}" min="10" max="1000" step="5" onchange="updateFontSize(${index}, this.value)">
                             <label>Font Family:</label>
                             <select onchange="updateFontFamily(${index}, this.value)">
                                 <option value="Arial" ${block.fontFamily === 'Arial' ? 'selected' : ''}>Arial</option>
@@ -347,18 +377,17 @@
                                 <option value="Helvetica" ${block.fontFamily === 'Helvetica' ? 'selected' : ''}>Helvetica</option>
                             </select>
                             <label>Glow Radius:</label>
-                            <input type="number" value="${block.glowRadius}" min="1" max="200" step="5" onchange="updateGlowRadius(${index}, this.value)">
+                            <input type="number" value="${block.glowRadius}" min="1" max="1000" step="5" onchange="updateGlowRadius(${index}, this.value)">
                             <label>Glow Intensity:</label>
                             <input type="number" value="${block.glowIntensity}" min="1" max="20" step="1" onchange="updateGlowIntensity(${index}, this.value)">
                             <label>Rotation:</label>
-                            <input type="number" value="${block.rotation}" min="-180" max="180" step="5" onchange="updateRotation(${index}, this.value)">
+                            <input type="number" value="${block.rotation}" min="-360" max="360" step="5" onchange="updateRotation(${index}, this.value)">
                             <label>Font Color:</label>
                             <input type="color" value="${block.foregroundColor}" onchange="updateForegroundColor(${index}, this.value)">
                             <label>Glow Color:</label>
                             <input type="color" value="${block.glowColor}" onchange="updateGlowColor(${index}, this.value)">
                             <button class="button locked" onclick="toggleLocked(${index})">${block.locked ? "&#128274":"&#128275"}</button>
                             <button class="button delete" onclick="deleteTextBlock(${index})">🗑</button>
-                            
                         </div>
                     `;
                     textBlocksContainer.appendChild(blockControl);
